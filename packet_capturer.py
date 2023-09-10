@@ -38,8 +38,10 @@ def analyse_packet(packet):
         # Print a message indicating the saved filename
         print(f"Packet information saved to file: {full_path}")
 
+num_packets = int(input("Enter the number of packets to capture: "))
+
 # Sniff packets and apply the filter
-packets = sniff(iface=iface, filter="ip", lfilter=packet_filter, prn=analyse_packet, count=10)
+packets = sniff(iface=iface, filter="ip", lfilter=packet_filter, prn=analyse_packet, count=num_packets)
 
 # Print or log the filtered packets
 for packet in packets:
