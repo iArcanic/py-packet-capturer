@@ -15,12 +15,11 @@ def create_packet_filter():
     print("4. Destination Port")
     print("5. Protocol (TCP/UDP/ICMP)")
     print("6. Clear Filter")
-    print("7. Start Capturing")
 
     filter_rules = []
 
     while True:
-        choice = int(input("Enter your choice (1-7): "))
+        choice = int(input("Enter your choice (1-6): "))
 
         if choice == 1:
             source_ip = input("Enter source IP address: ")
@@ -48,12 +47,8 @@ def create_packet_filter():
         elif choice == 6:
             filter_rules = []
             print("Filter cleared.")
-        elif choice == 7:
-            if not filter_rules:
-                print("No filter rules specified. Capturing all packets.")
-            break
         else:
-            print("Invalid choice. Please enter a valid option (1-7).")
+            print("Invalid choice. Please enter a valid option (1-6).")
 
     return " and ".join(filter_rules)
 
@@ -93,18 +88,26 @@ def analyse_packet(packet):
         # Print a message indicating the saved filename
         print(f"Packet information saved to file: {full_path}")
 
+while True:
+    print("Packet Capture Options:")
+    print("1. Filter Packets")
+    print("2. Capture All Packets")
+    choice = int(input("Enter your choice (1 or 2): "))
+
+    if choice == 1:
+        # User wants to filter packets
+        filter_rule = create_packet_filter()
+        break
+    elif choice == 2:
+        # User wants to capture all packets
+        filter_rule = None
+        break
+    else:
+        print("Invalid choice. Please enter 1 or 2.")
+
 num_packets = int(input("Enter the number of packets to capture: "))
 
-# Set the filter rule
-filter_rule = create_packet_filter()
-
-# Sniff packets depending on applied filter
-if filter_rule:
-    # Sniff packets with the specified filter rules applied
-    packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
-else:
-    # Sniff all packets without any filter
-    packets = sniff(iface=iface, prn=analyse_packet, count=num_packets)
+packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
 
 # Print or log the filtered packets
 for packet in packets:
