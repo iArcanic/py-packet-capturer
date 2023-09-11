@@ -6,6 +6,57 @@ import os
 # Define the network interface to capture packets from
 iface = "en0"
 
+# Function to create a packet filter based on user-defined rules
+def create_packet_filter():
+    print("Packet Filter Options:")
+    print("1. Source IP")
+    print("2. Destination IP")
+    print("3. Source Port")
+    print("4. Destination Port")
+    print("5. Protocol (TCP/UDP/ICMP)")
+    print("6. Clear Filter")
+    print("7. Start Capturing")
+
+    filter_rules = []
+
+    while True:
+        choice = int(input("Enter your choice (1-7): "))
+
+        if choice == 1:
+            source_ip = input("Enter source IP address: ")
+            filter_rules.append(f"ip src {source_ip}")
+            break
+        elif choice == 2:
+            destination_ip = input("Enter destination IP address: ")
+            filter_rules.append(f"ip dst {destination_ip}")
+            break 
+        elif choice == 3:
+            source_port = input("Enter source port: ")
+            filter_rules.append("tcp and src port " + str(source_port))
+            break
+        elif choice == 4:
+            destination_port = input("Enter destination port: ")
+            filter_rules.append("tcp and dst port " + str(destination_port))
+            break
+        elif choice == 5:
+            protocol = input("Enter protocol (tcp/udp/icmp): ").lower()
+            if protocol in ["tcp", "udp", "icmp"]:
+                filter_rules.append(f"{protocol}")
+                break
+            else:
+                print("Invalid protocol. Please enter 'tcp', 'udp', or 'icmp'.")
+        elif choice == 6:
+            filter_rules = []
+            print("Filter cleared.")
+        elif choice == 7:
+            if not filter_rules:
+                print("No filter rules specified. Capturing all packets.")
+            break
+        else:
+            print("Invalid choice. Please enter a valid option (1-7).")
+
+    return " and ".join(filter_rules)
+
 # Function to filter packets by source IP address
 def packet_filter(packet):
     return IPv4 in packet
@@ -14,6 +65,10 @@ def analyse_packet(packet):
     if IPv4 in packet:
         source_ip = packet[IPv4].src
         destination_ip = packet[IPv4].dst
+
+        # Check if the packet matches the defined filter rules
+        if filter_rule and not packet.haslayer(filter_rule):
+            return
 
         # Generate a filename with current timestamp
         timestamp = datetime.datetime.now()
@@ -40,8 +95,16 @@ def analyse_packet(packet):
 
 num_packets = int(input("Enter the number of packets to capture: "))
 
-# Sniff packets and apply the filter
-packets = sniff(iface=iface, filter="ip", lfilter=packet_filter, prn=analyse_packet, count=num_packets)
+# Set the filter rule
+filter_rule = create_packet_filter()
+
+# Sniff packets depending on applied filter
+if filter_rule:
+    # Sniff packets with the specified filter rules applied
+    packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
+else:
+    # Sniff all packets without any filter
+    packets = sniff(iface=iface, prn=analyse_packet, count=num_packets)
 
 # Print or log the filtered packets
 for packet in packets:
