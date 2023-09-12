@@ -2,6 +2,7 @@ from scapy.all import sniff
 from scapy.layers.inet import IP as IPv4
 import datetime
 import os
+import time
 
 # Define the network interface to capture packets from
 iface = "en0"
@@ -95,31 +96,61 @@ def analyse_packet(packet):
 
             return
 
+def capture_packets_with_duration(duration):
+    end_time = time.time() + duration
+    packets = []
+    while time.time() < end_time:
+        packet = sniff(iface=iface, prn=analyse_packet, count = 1)[0]
+        packets.append(packet)
+    print(f"Capture duration of {duration} seconds completed.")
+
+    # Save packets to log file
+    for packet in packets:
+        analyse_packet(packet)
+
+filter_rule = None
+
 while True:
     print("Packet Capture Options:")
     print("1. Filter Packets")
     print("2. Capture All Packets")
-    choice = int(input("Enter your choice (1 or 2): "))
+    print("3. Specify Capture Duration")
+    choice = int(input("Enter your choice (1, 2 or 3): "))
 
     if choice == 1:
         # User wants to filter packets
         filter_rule = create_packet_filter()
+
+        # Ask the user to choose between duration and number of packets
+        capture_option = int(input("Choose capture option:\n1. Capture by Duration\n2. Capture by Number of Packets\nEnter your choice (1 or 2): "))
+
+        if capture_option == 1:
+            # Capture by duration
+            capture_duration = int(input("Enter the capture duration (in seconds): "))
+            capture_packets_with_duration(capture_duration)
+
+        elif capture_option == 2:
+            # Capture by number of packets
+            num_packets = int(input("Enter the number of packets to capture: "))
+            packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
+
+        else:
+            print("Invalid choice for capture option. Please enter 1 or 2.")
+
         break
+
     elif choice == 2:
         # User wants to capture all packets
         filter_rule = None
+        num_packets = int(input("Enter the number of packets to capture: "))
+        packets = sniff(iface=iface, prn=analyse_packet, count=num_packets)
         break
+
+    elif choice == 3:
+        # User wants so specify capture duration
+        capture_duration = int(input("Enter the capture duration (in seconds): "))
+        capture_packets_with_duration(capture_duration)
+        break
+
     else:
-        print("Invalid choice. Please enter 1 or 2.")
-
-num_packets = int(input("Enter the number of packets to capture: "))
-
-if filter_rule:
-    packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
-else:
-    packets = sniff(iface=iface, count=num_packets)
-
-# Print or log the filtered packets
-for packet in packets:
-    analyse_packet(packet)
-    print(packet.summary())
+        print("Invalid choice. Please enter 1, 2 or 3.")
