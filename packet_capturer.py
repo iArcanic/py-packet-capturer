@@ -25,18 +25,22 @@ def create_packet_filter():
             source_ip = input("Enter source IP address: ")
             filter_rules.append(f"ip src {source_ip}")
             break
+        
         elif choice == 2:
             destination_ip = input("Enter destination IP address: ")
             filter_rules.append(f"ip dst {destination_ip}")
             break 
+        
         elif choice == 3:
             source_port = input("Enter source port: ")
             filter_rules.append("tcp and src port " + str(source_port))
             break
+        
         elif choice == 4:
             destination_port = input("Enter destination port: ")
             filter_rules.append("tcp and dst port " + str(destination_port))
             break
+        
         elif choice == 5:
             protocol = input("Enter protocol (tcp/udp/icmp): ").lower()
             if protocol in ["tcp", "udp", "icmp"]:
@@ -44,6 +48,7 @@ def create_packet_filter():
                 break
             else:
                 print("Invalid protocol. Please enter 'tcp', 'udp', or 'icmp'.")
+        
         elif choice == 6:
             filter_rules = []
             print("Filter cleared.")
@@ -63,30 +68,32 @@ def analyse_packet(packet):
 
         # Check if the packet matches the defined filter rules
         if filter_rule and not packet.haslayer(filter_rule):
+
+            # Generate a filename with current timestamp
+            timestamp = datetime.datetime.now()
+            filename = f"packet_log_{timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+
+            # Define the folder path in the user's home directory
+            log_folder = os.path.expanduser("~/packet_logs")
+
+            # Ensure the folder exists; create it if not
+            os.makedirs(log_folder, exist_ok=True)
+
+            # Construct the full path to the saved file
+            full_path = os.path.join(log_folder, filename)
+            print(f"Full path to log file: {full_path}")
+
+            # Log packet information to a file in packet_logs folder
+            with open(full_path, "a") as logfile:
+                logfile.write(f"Source IP: {source_ip}, Destination IP: {destination_ip}\n")
+
+            # Print information to console
+            print(f"Source IP: {source_ip}, Destination IP: {destination_ip}")
+
+            # Print a message indicating the saved filename
+            print(f"Packet information saved to file: {full_path}")
+
             return
-
-        # Generate a filename with current timestamp
-        timestamp = datetime.datetime.now()
-        filename = f"packet_log_{timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-
-        # Define the folder path in the user's home directory
-        log_folder = os.path.expanduser("~/packet_logs")
-
-        # Ensure the folder exists; create it if not
-        os.makedirs(log_folder, exist_ok=True)
-
-        # Construct the full path to the saved file
-        full_path = os.path.join(log_folder, filename)
-
-        # Log packet information to a file in packet_logs folder
-        with open(full_path, "a") as logfile:
-            logfile.write(f"Source IP: {source_ip}, Destination IP: {destination_ip}\n")
-
-        # Print information to console
-        print(f"Source IP: {source_ip}, Destination IP: {destination_ip}")
-
-        # Print a message indicating the saved filename
-        print(f"Packet information saved to file: {full_path}")
 
 while True:
     print("Packet Capture Options:")
@@ -107,8 +114,12 @@ while True:
 
 num_packets = int(input("Enter the number of packets to capture: "))
 
-packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
+if filter_rule:
+    packets = sniff(iface=iface, filter=filter_rule, prn=analyse_packet, count=num_packets)
+else:
+    packets = sniff(iface=iface, count=num_packets)
 
 # Print or log the filtered packets
 for packet in packets:
+    analyse_packet(packet)
     print(packet.summary())
