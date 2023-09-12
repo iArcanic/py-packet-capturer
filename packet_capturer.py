@@ -3,9 +3,13 @@ from scapy.layers.inet import IP as IPv4
 import datetime
 import os
 import time
+import networkx as nx
+import matplotlib.pyplot as plt
 
 # Define the network interface to capture packets from
 iface = "en0"
+
+network_graph = nx.DiGraph()
 
 # Function to create a packet filter based on user-defined rules
 def create_packet_filter():
@@ -64,8 +68,12 @@ def packet_filter(packet):
 
 def analyse_packet(packet):
     if IPv4 in packet:
+        # Packet IP info
         source_ip = packet[IPv4].src
         destination_ip = packet[IPv4].dst
+
+        # Add edges to network graph
+        network_graph.add_edge(source_ip, destination_ip)
 
         # Check if the packet matches the defined filter rules
         if filter_rule and not packet.haslayer(filter_rule):
@@ -107,6 +115,14 @@ def capture_packets_with_duration(duration):
     # Save packets to log file
     for packet in packets:
         analyse_packet(packet)
+
+# Function to visualize the network graph
+def visualize_network_graph():
+    plt.figure(figsize=(10, 10))
+    pos = nx.spring_layout(network_graph, seed=42)  # Layout for the graph
+    nx.draw(network_graph, pos, with_labels=True, node_size=100, node_color='skyblue', font_size=10, font_color='black')
+    plt.title("Network Graph")
+    plt.show()        
 
 filter_rule = None
 
@@ -154,3 +170,19 @@ while True:
 
     else:
         print("Invalid choice. Please enter 1, 2 or 3.")
+
+while True:
+    print("Options:")
+    print("1. View Network Graph")
+    print("2. Exit")
+    
+    choice = int(input("Enter your choice (1 or 2): "))
+    
+    if choice == 1:
+        # View the network graph
+        visualize_network_graph()
+    elif choice == 2:
+        # Exit the program
+        break
+    else:
+        print("Invalid choice. Please enter 1 or 2.")
